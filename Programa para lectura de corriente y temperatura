@@ -1,0 +1,66 @@
+/*Programa para tarjeta CTG_33_PT1000 version 1.Toma 400 muestras
+  espaciadas en el tiempo de corriente y temperatura y las muestra en puerto serial*/
+
+   //Declaración de variables //
+int I_read[400];
+float I;
+float T = 0;
+//
+
+   //Declaracion de variable de Filtros de corriente//
+float EMA = 0;
+float EMA_max = 0;
+float EMA_min = 0;
+float alpha = 0.2;
+float alpha1 = 0.1;
+
+   //Presentacion en pantalla puerto serial//
+unsigned long int t_print;
+//
+
+void setup() {
+  Serial.begin(115200);
+  
+  /*Se inicializa el tiempo de pantalla*/
+  t_print = millis();
+}
+
+void loop() {
+  //
+  //  Lectura de corriente //
+  for (int i = 0; i < 400; i++) {
+    
+    I_read[i] = (analogRead(A0) - 512);
+  }
+
+  //Inicializando maximo y minimo //
+  
+  float Max = 0;
+  float Min = 0;
+  for (int i = 0; i < 400; i++) {
+  
+   //Aplicacion de filtro de corriente//
+    
+    EMA = alpha * I_read[i] + (1 - alpha) * EMA;
+    if (EMA < Min ) Min = EMA;
+    if (EMA > Max ) Max = EMA;
+   
+  }
+  //
+  //Aplicacion de filtro de señales maximo y minimo// 
+  
+  EMA_max = alpha1 * Max + (1 - alpha1) * EMA_max;
+  EMA_min = alpha1 * Min + (1 - alpha1) * EMA_min;
+  I = 2.8333*75.91*1.9 * (EMA_max - EMA_min) * 5 / (2 * 1.4142135652 * 1023);
+  // 
+  
+  T = 40.8 * analogRead(A1) * 5 / 1023 - 3.702;
+
+   // Muestro lectura //
+  if (millis() - t_print >  500 ) {
+    Serial.print("Current=" + String(I));
+    Serial.print("  ");
+    Serial.println("Temperature=" + String(T));
+  }
+
+}
